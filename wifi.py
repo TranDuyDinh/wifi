@@ -1,4 +1,6 @@
 import os
+import subprocess
+import re
 
 def scan_wifi_ssids():
     """
@@ -26,11 +28,42 @@ def scan_wifi_ssids():
         print(f"An error occurred: {e}")
         return []
 
+def get_wifi_security(ssid):
+    result = subprocess.check_output(
+        ["netsh", "wlan", "show", "networks", "mode=bssid"],
+        encoding="utf-8",
+        errors="ignore"
+    )
+
+    blocks = result.split("SSID ")
+    for block in blocks:
+        if block.strip().startswith(":"):
+            continue
+        if ssid in block:
+            auth = re.search(r"Authentication\s*:\s*(.+)", block)
+            enc = re.search(r"Encryption\s*:\s*(.+)", block)
+            return {
+                "SSID": ssid,
+                "Authentication": auth.group(1).strip() if auth else "Unknown",
+                "Encryption": enc.group(1).strip() if enc else "Unknown"
+            }
+
+    return {
+        "SSID": ssid,
+        "Authentication": "Network not found",
+        "Encryption": "Network not found"
+    }
+
+
 if __name__ == "__main__":
-    ssids = scan_wifi_ssids()
-    if ssids:
-        print("Available Wi-Fi SSIDs:")
-        for ssid in ssids:
-            print(f"- {ssid}")
-    else:
-        print("No Wi-Fi networks found.")
+    ssid = "Nhim"
+    security_info = get_wifi_security(ssid)
+    print(security_info)
+
+    # ssids = scan_wifi_ssids()
+    # if ssids:
+    #     print("Available Wi-Fi SSIDs:")
+    #     for ssid in ssids:
+    #         print(f"- {ssid}")
+    # else:
+    #     print("No Wi-Fi networks found.")

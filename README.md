@@ -1,6 +1,6 @@
 # WiFi Management Tool
 
-Tool for managing Wi-Fi networks on Windows systems. This code is for educational purposes only.
+Tool to scan Wi-Fi password on Windows. This code is for educational purposes only.
 
 ## Features
 
@@ -21,8 +21,4 @@ python ./main.py
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the [LICENSE](LICENSE) file for details.
-
-## Copyright
-
-Copyright (C) 2026 Tran Duy Dinh. All rights reserved.
+This project is licensed under MIT License. See the [LICENSE](LICENSE) file for details.

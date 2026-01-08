@@ -1,6 +1,8 @@
-# WiFi Management Tool
+# Wifi Scanning
 
-Tool to scan Wi-Fi password on Windows. This code is for educational purposes only.
+Tool to scan Wi-Fi password by manually entering the password into the network.
+> [!CAUTION]
+> For educational purposes only, it cann't be used in practice.
 
 ## Features
 
@@ -21,4 +23,4 @@ python ./main.py
 
 ## License
 
-This project is licensed under MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under BSD-3-Clause License. See the [LICENSE](LICENSE) file for details.

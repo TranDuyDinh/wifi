@@ -21,4 +21,4 @@ python ./main.py
 
 ## License
 
-This project is licensed under MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under BSD-3-Clause License. See the [LICENSE](LICENSE) file for details.

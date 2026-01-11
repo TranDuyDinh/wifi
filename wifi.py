@@ -6,9 +6,77 @@ import time
 
 class wifi:
     def __init__(self):
-        self.TIME_WAIT_CONNECT = 5  # seconds
-        self.WPA2_MIN_CHARS = 8
-        self.WPA2_MAX_CHARS = 63
+        self.__TIME_WAIT_CONNECT = 5  # seconds
+        self._WPA2_MIN_CHARS = 8
+        self._WPA2_MAX_CHARS = 63
+
+    def __check_password_validity(self, password):
+        """Check if the password meets WPA2 requirements."""
+        if len(password) < self.WPA2_MIN_CHARS or len(password) > self.WPA2_MAX_CHARS:
+            return False, "Password must be between 8 and 63 characters long"
+        return True, "Password length is valid"
+
+    def _add_wifi_profile(self, profile_xml):
+        """Add a Wi-Fi profile from the given XML string."""
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xml") as f:
+            f.write(profile_xml.encode("utf-8"))
+            profile_path = f.name
+        try:
+            # print("Adding Wi-Fi profile...")
+            add_result = subprocess.run(
+                ["netsh", "wlan", "add", "profile", f"filename={profile_path}", "user=current"],
+                capture_output=True,
+                text=True
+            )
+            # print(f"Return code: {add_result.returncode}")
+            # print(f"STDOUT: {add_result.stdout}STDERR: {add_result.stderr}")
+            if add_result.returncode != 0:
+                return False, "Failed to add Wi-Fi profile"
+            else:
+                return True, "Success to add Wi-Fi profile"
+        finally:
+            os.remove(profile_path)
+
+    def _remove_wifi_profile(self, ssid_target):
+        """ Remove the profile since password is wrong """
+        try:
+            # print("Removing invalid Wi-Fi profile...")
+            delete_result = subprocess.run(
+                ["netsh", "wlan", "delete", "profile", f"name={ssid_target}"],
+                capture_output=True,
+                text=True
+            )
+            if delete_result.returncode == 0:
+                return True, "Wi-Fi profile removed successfully."
+            else:
+                return False, f"Failed to remove Wi-Fi profile: {delete_result.stderr}"
+        except Exception as e:
+            return False, f"Error removing Wi-Fi profile: {e}"
+
+    def _is_connected_to_ssid(self, target_ssid):
+        """Check if currently connected to the specified SSID."""
+        try:
+            result = subprocess.run(
+                ["netsh", "wlan", "show", "interfaces"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            lines = result.stdout.split('\n')
+            for i, line in enumerate(lines):
+                if 'SSID' in line and ':' in line:
+                    # Look for the line that shows the connected SSID
+                    ssid_line = line.split(':', 1)[1].strip()
+                    if ssid_line == target_ssid:
+                        # Check if the state is "connected"
+                        for j in range(i-5, i+5):  # Check surrounding lines for state
+                            if j >= 0 and j < len(lines) and 'State' in lines[j]:
+                                state_line = lines[j].split(':', 1)[1].strip()
+                                if 'connected' in state_line.lower():
+                                    return True
+            return False
+        except subprocess.CalledProcessError:
+            return False
 
     def scan_wifi_ssids(self):
         """
@@ -61,74 +129,6 @@ class wifi:
             "Authentication": "Network not found",
             "Encryption": "Network not found"
         }
-
-    def check_password_validity(self, password):
-        """Check if the password meets WPA2 requirements."""
-        if len(password) < self.WPA2_MIN_CHARS or len(password) > self.WPA2_MAX_CHARS:
-            return False, "Password must be between 8 and 63 characters long"
-        return True, "Password length is valid"
-
-    def add_wifi_profile(self, profile_xml):
-        """Add a Wi-Fi profile from the given XML string."""
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".xml") as f:
-            f.write(profile_xml.encode("utf-8"))
-            profile_path = f.name
-        try:
-            # print("Adding Wi-Fi profile...")
-            add_result = subprocess.run(
-                ["netsh", "wlan", "add", "profile", f"filename={profile_path}", "user=current"],
-                capture_output=True,
-                text=True
-            )
-            # print(f"Return code: {add_result.returncode}")
-            # print(f"STDOUT: {add_result.stdout}STDERR: {add_result.stderr}")
-            if add_result.returncode != 0:
-                return False, "Failed to add Wi-Fi profile"
-            else:
-                return True, "Success to add Wi-Fi profile"
-        finally:
-            os.remove(profile_path)
-
-    def remove_wifi_profile(self, ssid_target):
-        """ Remove the profile since password is wrong """
-        try:
-            # print("Removing invalid Wi-Fi profile...")
-            delete_result = subprocess.run(
-                ["netsh", "wlan", "delete", "profile", f"name={ssid_target}"],
-                capture_output=True,
-                text=True
-            )
-            if delete_result.returncode == 0:
-                return True, "Wi-Fi profile removed successfully."
-            else:
-                return False, f"Failed to remove Wi-Fi profile: {delete_result.stderr}"
-        except Exception as e:
-            return False, f"Error removing Wi-Fi profile: {e}"
-
-    def is_connected_to_ssid(self, target_ssid):
-        """Check if currently connected to the specified SSID."""
-        try:
-            result = subprocess.run(
-                ["netsh", "wlan", "show", "interfaces"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            lines = result.stdout.split('\n')
-            for i, line in enumerate(lines):
-                if 'SSID' in line and ':' in line:
-                    # Look for the line that shows the connected SSID
-                    ssid_line = line.split(':', 1)[1].strip()
-                    if ssid_line == target_ssid:
-                        # Check if the state is "connected"
-                        for j in range(i-5, i+5):  # Check surrounding lines for state
-                            if j >= 0 and j < len(lines) and 'State' in lines[j]:
-                                state_line = lines[j].split(':', 1)[1].strip()
-                                if 'connected' in state_line.lower():
-                                    return True
-            return False
-        except subprocess.CalledProcessError:
-            return False
 
     def connect_to_wifi(self, ssid, password):
         """

@@ -78,16 +78,20 @@ if __name__ == "__main__":
         elif choice == 3:
             # Scan Wi-Fi Password
             ssid = input("Enter SSID to scan password for: ")
+            type_pwd = get_type()
+            found_pwd = False
             print(f"\nAttempting to find password for '{ssid}'...")
-            for num_password in algo.generate_numbers(8, 11, limit=10):
-                print(num_password)
-                connect, message = wifi.connect_to_wifi(ssid, str(num_password))
+            for pwd in password.generator(type_pwd, limit=3):
+                connect, message = wifi.connect_to_wifi(ssid, pwd)
                 if connect:
-                    print(f"✓ Password found: {num_password}")
+                    print(f"✓ Password found: {pwd}")
+                    found_pwd = True
                     break
                 elif connect == None:
                     print(message)
                     break
+            if not found_pwd:
+                print("Can not found any password!")
 
         elif choice == 4:
             print("Exiting the program. Goodbye!")

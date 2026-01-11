@@ -15,7 +15,7 @@ class password:
         """
         return ''.join(arr)
 
-    def gen_number(self, type_password, limit=None):
+    def generator(self, type_password, limit=None):
         """
         Generate passwords consisting of numbers only.
 

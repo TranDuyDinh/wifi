@@ -11,13 +11,17 @@ class wifi:
         self._WPA2_MAX_CHARS = 63
 
     def __check_password_validity(self, password):
-        """Check if the password meets WPA2 requirements."""
-        if len(password) < self.WPA2_MIN_CHARS or len(password) > self.WPA2_MAX_CHARS:
+        """
+        Check if the password meets WPA2 requirements.
+        """
+        if len(password) < self._WPA2_MIN_CHARS or len(password) > self._WPA2_MAX_CHARS:
             return False, "Password must be between 8 and 63 characters long"
         return True, "Password length is valid"
 
     def _add_wifi_profile(self, profile_xml):
-        """Add a Wi-Fi profile from the given XML string."""
+        """
+        Add a Wi-Fi profile from the given XML string.
+        """
         with tempfile.NamedTemporaryFile(delete=False, suffix=".xml") as f:
             f.write(profile_xml.encode("utf-8"))
             profile_path = f.name
@@ -38,7 +42,9 @@ class wifi:
             os.remove(profile_path)
 
     def _remove_wifi_profile(self, ssid_target):
-        """ Remove the profile since password is wrong """
+        """
+        Remove the profile since password is wrong.
+        """
         try:
             # print("Removing invalid Wi-Fi profile...")
             delete_result = subprocess.run(
@@ -54,7 +60,9 @@ class wifi:
             return False, f"Error removing Wi-Fi profile: {e}"
 
     def _is_connected_to_ssid(self, target_ssid):
-        """Check if currently connected to the specified SSID."""
+        """
+        Check if currently connected to the specified SSID.
+        """
         try:
             result = subprocess.run(
                 ["netsh", "wlan", "show", "interfaces"],
@@ -145,7 +153,7 @@ class wifi:
             None: Already connected or network unavailable.
         """
         # Check password validity
-        is_valid, message = self.check_password_validity(password)
+        is_valid, message = self.__check_password_validity(password)
         if not is_valid:
             return None, f"Password validation failed: {message}"
 
@@ -176,12 +184,12 @@ class wifi:
         </WLANProfile>
         """
         # Add Wi-Fi profile
-        add_profile, message = self.add_wifi_profile(wifi_profile)
+        add_profile, message = self._add_wifi_profile(wifi_profile)
         if add_profile is False:
             return None, message
 
         # Check if already connected before attempting
-        was_connected_before = self.is_connected_to_ssid(ssid)
+        was_connected_before = self._is_connected_to_ssid(ssid)
         if was_connected_before:
             return None, f"Already connected to {ssid}"
 
@@ -198,15 +206,15 @@ class wifi:
 
         # Wait for connection to establish
         print("Waiting for connection to establish...")
-        time.sleep(self.TIME_WAIT_CONNECT)
+        time.sleep(self.__TIME_WAIT_CONNECT)
 
         # Check connection result
-        currently_connected = self.is_connected_to_ssid(ssid)
+        currently_connected = self._is_connected_to_ssid(ssid)
 
         if currently_connected is True:
             return True, "Password verification: CORRECT"
         else:
-            remove_profile, message = self.remove_wifi_profile(ssid)
+            remove_profile, message = self._remove_wifi_profile(ssid)
             if remove_profile is False:
                 print(message)
             return False, "Password verification: INCORRECT"

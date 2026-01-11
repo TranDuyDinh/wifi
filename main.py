@@ -1,5 +1,5 @@
 from wifi import wifi
-from brute_force import brute_force
+from password import password
 
 def get_choice_feature():
     """
@@ -25,9 +25,33 @@ def get_choice_feature():
     except ValueError:
         print("Invalid input. Please enter a number (1, 2, 3, or 4).")
 
+def get_type():
+    """
+    Display menu options and get user input for password type as number, letters or both.
+
+    Returns:
+        int: User's choice (1, 2, 3 or 4)
+    """
+    # while True:
+    print("\Password as:")
+    print("1. Numbers only")
+    print("2. Numbers and lowercase letters")
+    print("3. Letters only")
+    print("4. Numbers and letters")
+    print("-" * 25)
+
+    try:
+        choice = int(input("Enter your choice (1-4): "))
+        if choice in [1, 2, 3, 4]:
+            return choice
+        else:
+            print("Invalid choice. Please enter 1, 2, 3, or 4.")
+    except ValueError:
+        print("Invalid input. Please enter a number (1, 2, 3, or 4).")
+
 if __name__ == "__main__":
     wifi = wifi()
-    algo = brute_force()
+    password = password()
 
     while True:
         # Get feature choice in each iteration

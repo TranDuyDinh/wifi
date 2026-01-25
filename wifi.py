@@ -194,7 +194,7 @@ class wifi:
             return None, f"Already connected to {ssid}"
 
         # Connect to Wi-Fi
-        print(f"Attempting to connect to Wi-Fi: {ssid}")
+        __debug__ and print(f"Attempting to connect to Wi-Fi: {ssid}")
         connect_result = subprocess.run(
             ["netsh", "wlan", "connect", f"name={ssid}"],
             capture_output=True,
@@ -205,7 +205,7 @@ class wifi:
             return None, f"Failed to initiate connection to Wi-Fi: {connect_result.stderr}"
 
         # Wait for connection to establish
-        print("Waiting for connection to establish...")
+        __debug__ and print("Waiting for connection to establish...")
         time.sleep(self.__TIME_WAIT_CONNECT)
 
         # Check connection result

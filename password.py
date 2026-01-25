@@ -42,3 +42,31 @@ class password:
                 count += 1
                 if limit and count >= limit:
                     return
+
+    def total(self, type_password, limit=None):
+        """
+        Calculate total number of passwords that can be generated.
+
+        Args:
+            type_password: type to generate password
+            limit(optional): limit on how many numbers to generate.
+
+        Returns:
+            total: total number of passwords that can be generated.
+        """
+        total = 0
+        if type_password == 1: # numbers only
+            elements = self.__NUMBER
+        elif type_password == 2: # numbers + lowercase letters
+            elements = self.__NUMBER + self.__LOWERCASE_LETTER
+        elif type_password == 3: # letters
+            elements = self.__LOWERCASE_LETTER + self.__UPPERCASE_LETTER
+        elif type_password == 4: # numbers + letters
+            elements = self.__NUMBER + self.__LOWERCASE_LETTER + self.__UPPERCASE_LETTER
+
+        for len in range(self.__WPA2_MIN_LENGTH, self.__WPA2_MAX_LENGTH + 1):
+            total += len(elements) ** len
+
+        if limit and total > limit:
+            return limit
+        return total

@@ -3,6 +3,8 @@ import subprocess
 import re
 import tempfile
 import time
+import platform
+
 
 class wifi:
     def __init__(self):
@@ -218,3 +220,124 @@ class wifi:
             if remove_profile is False:
                 print(message)
             return False, "Password verification: INCORRECT"
+
+
+
+class extractor:
+    """
+    Extracts Wi-Fi profile details (SSID, BSSID, Security Type) 
+    from the local machine's active connection.
+    """
+
+    def __init__(self):
+        self.os_type = platform.system()
+
+    def _run_command(self, cmd):
+        """Helper to run shell commands."""
+        try:
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=10)
+            return result.stdout.strip()
+        except Exception as e:
+            return f"Error: {e}"
+
+    def get_windows_profile(self):
+        """Extracts Wi-Fi profile from Windows netsh output."""
+        output = self._run_command("netsh wlan show interface")
+        if "Profile" not in output:
+            return None
+        
+        # Extract SSID
+        ssid_match = re.search(r"SSID\s+:\s+(.*)", output)
+        ssid = ssid_match.group(1).strip() if ssid_match else "Unknown"
+        
+        # Extract BSSID (MAC Address)
+        bssid_match = re.search(r"BSSID\s+:\s+(.*)", output)
+        bssid = bssid_match.group(1).strip() if bssid_match else "Unknown"
+        
+        # Extract Security Type
+        security_match = re.search(r"Authentication\s+:\s+(.*)", output)
+        auth = security_match.group(1).strip() if security_match else "Unknown"
+        
+        security_match2 = re.search(r"Cipher\s+:\s+(.*)", output)
+        cipher = security_match2.group(1).strip() if security_match2 else "Unknown"
+        
+        security_type = f"{auth} / {cipher}" if auth != "Unknown" else "Unknown"
+
+        return {
+            "ssid": ssid,
+            "bssid": bssid,
+            "security": security_type,
+            "os": "Windows"
+        }
+
+    def get_macos_profile(self):
+        """Extracts Wi-Fi profile from macOS airport command."""
+        output = self._run_command("/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I")
+        if not output:
+            return None
+
+        ssid = re.search(r"SSID\s+:\s+(.*)", output)
+        bssid = re.search(r"bssid\s+:\s+(.*)", output)
+        security = re.search(r"security\s+:\s+(.*)", output)
+
+        return {
+            "ssid": ssid.group(1).strip() if ssid else "Unknown",
+            "bssid": bssid.group(1).strip() if bssid else "Unknown",
+            "security": security.group(1).strip() if security else "Unknown",
+            "os": "macOS"
+        }
+
+    def get_linux_profile(self):
+        """Extracts Wi-Fi profile from Linux nmcli or iwctl."""
+        # Try nmcli first
+        output = self._run_command("nmcli -t -f active,ssid,bssid,sec device wifi list 2>/dev/null | grep '^yes'")
+        if not output:
+            # Fallback to iwconfig or ip link if nmcli isn't available or no data
+            output = self._run_command("iw dev wlan0 link 2>/dev/null || iw dev wlp* link 2>/dev/null")
+        
+        # Simple parsing for nmcli output format: active:SSID:BSSID:SEC
+        if ":" in output:
+            parts = output.split(":")
+            if len(parts) >= 4:
+                return {
+                    "ssid": parts[1],
+                    "bssid": parts[2],
+                    "security": parts[3],
+                    "os": "Linux"
+                }
+        
+        # Fallback for iw output
+        ssid_match = re.search(r"SSID=(.*)", output)
+        bssid_match = re.search(r"addr\s+(:?\w{2}:){5}\w{2}", output)
+        
+        return {
+            "ssid": ssid_match.group(1).strip() if ssid_match else "Unknown",
+            "bssid": bssid_match.group(0).split("addr ")[1] if bssid_match else "Unknown",
+            "security": "Unknown",
+            "os": "Linux"
+        }
+
+    def get_profile(self):
+        """Returns the current Wi-Fi profile based on OS."""
+        if self.os_type == "Windows":
+            return self.get_windows_profile()
+        elif self.os_type == "Darwin":  # macOS
+            return self.get_macos_profile()
+        elif self.os_type == "Linux":
+            return self.get_linux_profile()
+        else:
+            return {"error": f"Unsupported OS: {self.os_type}"}
+
+# Example Usage
+if __name__ == "__main__":
+    extractor = extractor()
+    profile = extractor.get_profile()
+    
+    if profile and "error" not in profile:
+        print(f"Connected Wi-Fi Profile:")
+        print(f"  SSID:     {profile['ssid']}")
+        print(f"  BSSID:    {profile['bssid']}")
+        print(f"  Security: {profile['security']}")
+        print(f"  OS:       {profile['os']}")
+    else:
+        print("Could not retrieve Wi-Fi profile.")
